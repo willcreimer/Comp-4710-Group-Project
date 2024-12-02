@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import SMOTE
 import time
@@ -30,18 +30,20 @@ features = ['fire_position_on_slope', 'wind_speed', 'relative_humidity', 'temper
             'fire_spread_rate', 'current_size', 'assessment_hectares']
 target = 'isNaturalCaused'
 
-X = data[features]
+x = data[features]
 y = data[target]
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
 
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+x_scaled = scaler.fit_transform(x)
+
 
 smote = SMOTE(random_state=42)
-X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+X_train, y_train = smote.fit_resample(x_scaled, y)
 
+X_train_smote, X_test, y_train_smote, y_test = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+print(X_train.shape)
 param_grid = {
     'C': [0.01, 0.1, 1, 10],
     'solver': ['liblinear', 'saga'],
@@ -64,7 +66,7 @@ best_model.fit(X_train_smote, y_train_smote)
 fit_end_time = time.time()
 
 fit_time = fit_end_time - fit_start_time
-print(f"\nModel Fitting Time: {fit_time:.2f} seconds")
+print(f"\nModel Fitting Time: {fit_time} seconds")
 
 y_pred = best_model.predict(X_test)
 
@@ -73,8 +75,10 @@ precision_weighted_avg = report_dict['weighted avg']['precision']
 print(f"Precision for the whole model: {precision_weighted_avg}")
 
 accuracy = accuracy_score(y_test, y_pred)
+cm = confusion_matrix(y_test, y_pred)
+cm_df = pd.DataFrame(cm, index=["Actual Human Caused", "Actual Natural Caused"], columns=["Predicted Human Caused", "Predicted Natural Caused"])
+print(cm_df)
 print(f"\nBest Accuracy Score after Tuning: {accuracy}")
-
 print("Best Classification Report:")
 print(classification_report(y_test, y_pred))
 

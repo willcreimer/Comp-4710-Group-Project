@@ -45,17 +45,18 @@ target = 'isNaturalCaused'
 
 data = data.dropna(subset=features + [target])
 
-X = data[features]
+x = data[features]
 y = data[target]
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
 
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+x_scaled = scaler.fit_transform(x)
 
 smote = SMOTE(random_state=42)
-X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+X_train, y_train = smote.fit_resample(x_scaled, y)
+
+X_train_smote, X_test, y_train_smote, y_test = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
 xgb_model = XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
 
@@ -64,7 +65,7 @@ xgb_model.fit(X_train_smote, y_train_smote)
 fit_end_time = time.time()
 
 fit_time = fit_end_time - fit_start_time
-print(f"\nModel Fitting Time: {fit_time:.2f} seconds")
+print(f"\nModel Fitting Time: {fit_time} seconds")
 
 
 y_pred = xgb_model.predict(X_test)
